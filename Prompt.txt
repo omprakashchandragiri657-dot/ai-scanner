@@ -1,0 +1,2856 @@
+# Build a Demo MVP: AI Code Security Analyzer
+
+Build a **working demo MVP** for our cybersecurity research project:
+
+> **AI Code Security Analyzer — Detecting Security Vulnerabilities in AI-Generated Software**
+
+The goal of this MVP is to demonstrate that our system can take an **entire software project**, scan its source files, identify potential security vulnerabilities, explain the findings, and provide remediation suggestions.
+
+This is a **review/demo version**, so prioritize reliability, clean architecture, and an impressive working UI over advanced research features.
+
+---
+
+# 1. CORE DEMO
+
+The application must support this workflow:
+
+```text
+User uploads project ZIP
+        ↓
+ZIP extraction
+        ↓
+Project structure analysis
+        ↓
+Identify supported source files
+        ↓
+Scan files recursively
+        ↓
+Run security detection rules
+        ↓
+Normalize findings
+        ↓
+Deduplicate findings
+        ↓
+Generate project security report
+        ↓
+User explores vulnerabilities
+        ↓
+Show evidence + explanation + remediation
+```
+
+The system must scan the **whole project**, not just one pasted code snippet.
+
+---
+
+# 2. TECHNOLOGY
+
+## Backend
+
+Use:
+
+* Python 3.12+
+* FastAPI
+* Uvicorn
+
+## Frontend
+
+Use:
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* Recharts
+
+## Storage
+
+For this MVP:
+
+**Do not use PostgreSQL or Redis.**
+
+Use temporary/local storage for uploaded projects and analysis results.
+
+---
+
+# 3. PROJECT STRUCTURE
+
+Create:
+
+```text
+ai-code-security/
+│
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   │
+│   ├── analyzer/
+│   │   ├── __init__.py
+│   │   ├── engine.py
+│   │   ├── models.py
+│   │   ├── scanner.py
+│   │   ├── project_scanner.py
+│   │   ├── rules/
+│   │   │   ├── __init__.py
+│   │   │   ├── python_rules.py
+│   │   │   ├── javascript_rules.py
+│   │   │   └── java_rules.py
+│   │   └── utils.py
+│   │
+│   └── uploads/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── App.tsx
+│   └── package.json
+│
+└── README.md
+```
+
+Keep the detection engine modular so we can later add Semgrep, CodeQL, LLM analysis, taint analysis, etc.
+
+---
+
+# 4. LANDING / DASHBOARD
+
+Create a professional cybersecurity dashboard.
+
+Title:
+
+# AI Code Security Analyzer
+
+Subtitle:
+
+**Analyze AI-generated software for security vulnerabilities before production.**
+
+Main action:
+
+### Upload Project
+
+Allow the user to upload:
+
+```text
+project.zip
+```
+
+Also provide:
+
+### Paste Code
+
+as an optional secondary feature.
+
+---
+
+# 5. PROJECT ZIP UPLOAD
+
+The backend must accept ZIP files.
+
+Endpoint:
+
+```text
+POST /api/projects/scan
+```
+
+The ZIP should be:
+
+1. validated
+2. safely extracted
+3. recursively traversed
+4. source files identified
+5. ignored directories skipped
+6. files scanned
+7. findings returned
+
+---
+
+# 6. SECURITY FOR ZIP PROCESSING
+
+This is extremely important.
+
+Do NOT blindly extract ZIP files.
+
+Protect against:
+
+### Zip Slip / Path Traversal
+
+Reject entries such as:
+
+```text
+../../evil.py
+```
+
+or absolute paths.
+
+All extracted files must remain inside the temporary project directory.
+
+Also enforce:
+
+* Maximum ZIP size: 25 MB
+* Maximum extracted size: 100 MB
+* Maximum number of files: 2,000
+* Ignore symbolic links if possible
+* Reject dangerous archive structures
+
+The system should NEVER execute uploaded project files.
+
+We are performing **static source analysis only**.
+
+---
+
+# 7. FILE TYPES
+
+Initially support:
+
+### Python
+
+```text
+.py
+```
+
+### JavaScript
+
+```text
+.js
+.jsx
+```
+
+### TypeScript
+
+```text
+.ts
+.tsx
+```
+
+### Java
+
+```text
+.java
+```
+
+Later languages can be added.
+
+---
+
+# 8. IGNORED DIRECTORIES
+
+Do not scan:
+
+```text
+.git
+node_modules
+venv
+.venv
+__pycache__
+dist
+build
+target
+.idea
+.vscode
+coverage
+.cache
+```
+
+Make the ignored directory list configurable.
+
+---
+
+# 9. FILE SIZE LIMIT
+
+Do not scan extremely large individual files.
+
+Maximum:
+
+```text
+2 MB per source file
+```
+
+Files exceeding the limit should be skipped and reported under:
+
+**Skipped Files**
+
+---
+
+# 10. PROJECT ANALYSIS
+
+After upload, first analyze the project structure.
+
+Display:
+
+```text
+Project Name:
+FairShare
+
+Files Found:
+47
+
+Source Files:
+31
+
+Python:
+18
+
+JavaScript:
+7
+
+TypeScript:
+5
+
+Java:
+1
+
+Ignored:
+16
+```
+
+---
+
+# 11. SCANNING SCREEN
+
+After upload, show a professional scanning animation.
+
+Example:
+
+```text
+Scanning Project
+
+✓ Project extracted
+✓ Project structure analyzed
+✓ Python files discovered
+✓ JavaScript files discovered
+✓ Security rules loaded
+
+Scanning:
+
+backend/api/users.py
+██████████████████░░
+
+frontend/src/App.tsx
+████████████████████
+
+Checking security patterns...
+```
+
+Show the current file being scanned.
+
+Do not fake the actual results.
+
+The progress must be based on the real files being processed.
+
+---
+
+# 12. DETECTION ENGINE
+
+Create a modular detection framework.
+
+Use:
+
+```python
+class SecurityRule:
+    id = ""
+    name = ""
+    description = ""
+    cwe = ""
+    severity = ""
+
+    def detect(self, code, file_path):
+        return []
+```
+
+The scanner should load all applicable rules for the file type.
+
+Example:
+
+```text
+Python file
+    ↓
+Python security rules
+
+JavaScript file
+    ↓
+JavaScript security rules
+```
+
+---
+
+# 13. PYTHON VULNERABILITIES
+
+Implement reliable detection for:
+
+## SQL Injection
+
+Examples:
+
+```python
+query = "SELECT * FROM users WHERE id=" + user_id
+cursor.execute(query)
+```
+
+and:
+
+```python
+query = f"SELECT * FROM users WHERE id={user_id}"
+cursor.execute(query)
+```
+
+Finding:
+
+```text
+SQL Injection
+CWE-89
+HIGH
+```
+
+---
+
+## Command Injection
+
+Detect:
+
+```python
+os.system(user_input)
+```
+
+```python
+os.popen(user_input)
+```
+
+```python
+subprocess.run(user_input, shell=True)
+```
+
+```python
+subprocess.call(user_input, shell=True)
+```
+
+Finding:
+
+```text
+Command Injection
+CWE-78
+CRITICAL
+```
+
+---
+
+## Dangerous eval
+
+Detect:
+
+```python
+eval(user_input)
+```
+
+Finding:
+
+```text
+Code Injection
+CWE-95
+CRITICAL
+```
+
+---
+
+## Insecure Deserialization
+
+Detect:
+
+```python
+pickle.loads(data)
+```
+
+Finding:
+
+```text
+Insecure Deserialization
+CWE-502
+HIGH
+```
+
+---
+
+## Hardcoded Credentials
+
+Detect obvious patterns:
+
+```python
+password = "admin123"
+api_key = "..."
+secret_key = "..."
+```
+
+Finding:
+
+```text
+Hardcoded Credentials
+CWE-798
+HIGH
+```
+
+Do not flag every normal string.
+
+---
+
+## Path Traversal
+
+Detect suspicious patterns such as:
+
+```python
+open("/uploads/" + filename)
+```
+
+or:
+
+```python
+file_path = base_path + user_input
+open(file_path)
+```
+
+Finding:
+
+```text
+Path Traversal
+CWE-22
+HIGH
+```
+
+---
+
+# 14. JAVASCRIPT / TYPESCRIPT VULNERABILITIES
+
+Implement:
+
+## Cross-Site Scripting
+
+Detect:
+
+```javascript
+element.innerHTML = userInput;
+```
+
+Finding:
+
+```text
+Cross-Site Scripting
+CWE-79
+HIGH
+```
+
+---
+
+## Command Injection
+
+Detect dangerous patterns such as:
+
+```javascript
+exec(userInput)
+```
+
+Finding:
+
+```text
+Command Injection
+CWE-78
+CRITICAL
+```
+
+---
+
+## Hardcoded Secrets
+
+Detect obvious:
+
+```javascript
+const apiKey = "..."
+const password = "..."
+const secret = "..."
+```
+
+Finding:
+
+```text
+Hardcoded Credentials
+CWE-798
+HIGH
+```
+
+---
+
+# 15. JAVA VULNERABILITIES
+
+Implement basic rules for:
+
+* SQL injection
+* command injection
+* hardcoded credentials
+* unsafe deserialization
+
+Use simple but meaningful patterns.
+
+---
+
+# 16. FINDING MODEL
+
+Every finding must follow the same structure:
+
+```json
+{
+  "id": "VULN-001",
+  "title": "SQL Injection",
+  "severity": "HIGH",
+  "cwe": "CWE-89",
+  "confidence": 91,
+  "file": "backend/users.py",
+  "line": 42,
+  "code": "cursor.execute(query)",
+  "description": "User-controlled input appears to reach SQL execution without safe parameterization.",
+  "evidence": "The SQL query is constructed using user-controlled input.",
+  "recommendation": "Use parameterized SQL queries.",
+  "detector": "SQL Injection Rule"
+}
+```
+
+---
+
+# 17. LINE DETECTION
+
+Every finding must contain:
+
+```text
+File
+Line number
+Code snippet
+```
+
+Example:
+
+```text
+backend/api/users.py : Line 42
+```
+
+When possible, include 2–3 surrounding lines as context.
+
+---
+
+# 18. PROJECT SECURITY REPORT
+
+After scanning, show:
+
+# Security Report
+
+```text
+Project: FairShare
+
+Files Scanned       31
+Lines Analyzed      8,421
+Vulnerabilities     12
+```
+
+Severity:
+
+```text
+CRITICAL    2
+HIGH        5
+MEDIUM      4
+LOW         1
+```
+
+---
+
+# 19. DASHBOARD CHARTS
+
+Show:
+
+### Severity Distribution
+
+Use a chart:
+
+```text
+Critical
+High
+Medium
+Low
+```
+
+### Vulnerabilities by File
+
+Example:
+
+```text
+backend/auth.py       4
+backend/users.py      3
+frontend/App.tsx      2
+config/settings.py    2
+utils/helper.py       1
+```
+
+### CWE Distribution
+
+Example:
+
+```text
+CWE-89    3
+CWE-78    2
+CWE-798   2
+CWE-79    2
+CWE-502   1
+CWE-22    1
+CWE-95    1
+```
+
+---
+
+# 20. FINDINGS TABLE
+
+Create a searchable/filterable table:
+
+| Severity | Vulnerability     | CWE     | File        | Line | Confidence |
+| -------- | ----------------- | ------- | ----------- | ---- | ---------- |
+| CRITICAL | Command Injection | CWE-78  | utils.py    | 42   | 94%        |
+| HIGH     | SQL Injection     | CWE-89  | users.py    | 87   | 91%        |
+| HIGH     | Hardcoded Secret  | CWE-798 | settings.py | 19   | 97%        |
+
+Filters:
+
+```text
+Severity
+Language
+CWE
+File
+```
+
+---
+
+# 21. FINDING DETAILS
+
+Clicking a finding should open a detailed security analysis.
+
+Example:
+
+# SQL Injection
+
+```text
+Severity: HIGH
+CWE: CWE-89
+Confidence: 91%
+```
+
+### Location
+
+```text
+backend/api/users.py
+Line 42
+```
+
+### Vulnerable Code
+
+Show syntax-highlighted code:
+
+```python
+query = f"SELECT * FROM users WHERE id={user_id}"
+cursor.execute(query)
+```
+
+Highlight the vulnerable line.
+
+---
+
+# 22. WHY IS THIS VULNERABLE?
+
+Show a simple explanation:
+
+> User-controlled input is incorporated directly into a SQL query. An attacker may manipulate the input to alter the intended SQL statement.
+
+---
+
+# 23. DETECTION EVIDENCE
+
+Show:
+
+```text
+User Input
+    ↓
+user_id
+    ↓
+String Formatting
+    ↓
+SQL Query
+    ↓
+cursor.execute()
+```
+
+This visually communicates the beginning of our future taint-analysis system.
+
+For this MVP, the flow can be generated from the rule's detected pattern.
+
+---
+
+# 24. RECOMMENDED FIX
+
+Show before/after.
+
+### Vulnerable
+
+```python
+query = f"SELECT * FROM users WHERE id={user_id}"
+cursor.execute(query)
+```
+
+### Recommended
+
+```python
+cursor.execute(
+    "SELECT * FROM users WHERE id=%s",
+    (user_id,)
+)
+```
+
+Explain:
+
+> Parameterized queries keep user input separate from SQL instructions.
+
+---
+
+# 25. PROJECT FILE EXPLORER
+
+This is important for the demo.
+
+Create a left-side project explorer:
+
+```text
+FairShare/
+│
+├── backend/
+│   ├── api/
+│   │   ├── users.py      🔴 3
+│   │   └── auth.py       🟠 2
+│   │
+│   ├── utils.py          🔴 1
+│   └── settings.py       🟠 2
+│
+├── frontend/
+│   └── src/
+│       ├── App.tsx       🟠 2
+│       └── Login.tsx
+│
+└── requirements.txt
+```
+
+Color/severity indicators should show which files contain findings.
+
+Clicking a file should show:
+
+* source code
+* line numbers
+* findings for that file
+
+---
+
+# 26. DEMO PROJECT
+
+Create a built-in demo project.
+
+Button:
+
+**Try Demo Project**
+
+When clicked, load a simulated AI-generated project containing intentionally vulnerable code.
+
+Example structure:
+
+```text
+demo-project/
+├── backend/
+│   ├── app.py
+│   ├── users.py
+│   ├── auth.py
+│   └── utils.py
+├── frontend/
+│   ├── App.jsx
+│   └── Login.jsx
+└── config/
+    └── settings.py
+```
+
+Include several controlled vulnerabilities.
+
+The user can click:
+
+**Scan Demo Project**
+
+and immediately demonstrate the complete workflow.
+
+Clearly label this:
+
+> Demo project contains intentionally vulnerable code for security testing.
+
+---
+
+# 27. NO FALSE RESULTS
+
+The frontend must NOT contain hardcoded vulnerability results.
+
+The workflow must actually be:
+
+```text
+ZIP
+ ↓
+Backend
+ ↓
+Extract
+ ↓
+Read files
+ ↓
+Run rules
+ ↓
+Generate findings
+ ↓
+Return API response
+ ↓
+Frontend renders results
+```
+
+The demo data should only be used for the built-in demo project itself.
+
+---
+
+# 28. ANALYSIS STATISTICS
+
+After scanning, calculate:
+
+```text
+Files scanned
+Lines analyzed
+Rules executed
+Vulnerabilities
+Critical findings
+High findings
+Medium findings
+Low findings
+Scan duration
+```
+
+Example:
+
+```text
+31 files
+8,421 lines
+14 rules
+12 vulnerabilities
+0.82 seconds
+```
+
+Calculate values from the actual scan.
+
+---
+
+# 29. EXPORT
+
+Add:
+
+### Export Report
+
+Allow the user to download:
+
+```text
+security-report.json
+```
+
+The JSON should contain:
+
+* project information
+* scan statistics
+* findings
+* file information
+* severity
+* CWE
+* evidence
+* recommendations
+
+---
+
+# 30. UI DESIGN
+
+Make it look like a serious cybersecurity research product.
+
+Use:
+
+* dark theme
+* professional typography
+* code editor styling
+* clean cards
+* severity badges
+* charts
+* file explorer
+* vulnerability detail panel
+* subtle animations
+
+Avoid excessive neon effects.
+
+The interface should look appropriate for a **college project/research review**, not a gaming dashboard.
+
+---
+
+# 31. Main Navigation
+
+Sidebar:
+
+```text
+AI CODE SECURITY
+
+Dashboard
+
+Project Scanner
+
+Findings
+
+Research
+
+About
+```
+
+Dashboard should show the latest scan.
+
+---
+
+# 32. ABOUT / RESEARCH SECTION
+
+Add:
+
+# Research Objective
+
+> To systematically identify, quantify, and explain security vulnerabilities introduced by AI-generated software before it reaches production.
+
+Then show:
+
+```text
+AI-Generated Code
+        ↓
+Static Analysis
+        ↓
+Security Detection
+        ↓
+Vulnerability Classification
+        ↓
+Evidence & Explanation
+        ↓
+Risk Assessment
+        ↓
+Remediation
+```
+
+Add a small section:
+
+### Future Research
+
+```text
+✓ Multi-engine detection
+✓ AST analysis
+✓ Taint analysis
+✓ LLM-assisted analysis
+✓ Dynamic testing
+✓ Vulnerability correlation
+✓ Dataset generation
+✓ AI model comparison
+```
+
+Mark these as:
+
+**Planned Research Extensions**
+
+Do not pretend these are already implemented.
+
+---
+
+# 33. API
+
+Implement:
+
+```text
+GET  /api/health
+
+POST /api/projects/scan
+
+POST /api/code/analyze
+
+GET  /api/rules
+
+GET  /api/demo/project
+```
+
+For project scanning:
+
+```text
+POST /api/projects/scan
+Content-Type: multipart/form-data
+file=<project.zip>
+```
+
+Return:
+
+```json
+{
+  "project": {
+    "name": "FairShare",
+    "files_scanned": 31,
+    "lines_analyzed": 8421
+  },
+  "summary": {
+    "total": 12,
+    "critical": 2,
+    "high": 5,
+    "medium": 4,
+    "low": 1
+  },
+  "findings": []
+}
+```
+
+---
+
+# 34. ERROR HANDLING
+
+Handle:
+
+* invalid ZIP
+* corrupted ZIP
+* ZIP bomb protection
+* oversized ZIP
+* unsupported files
+* empty project
+* empty source files
+* malformed source
+* backend errors
+
+Show friendly messages in the frontend.
+
+---
+
+# 35. PERFORMANCE
+
+The MVP should comfortably handle a project containing:
+
+```text
+500–1000 source files
+```
+
+within reasonable limits.
+
+Do not load the entire project into the frontend.
+
+Only send:
+
+* project metadata
+* findings
+* relevant code snippets
+
+to the frontend.
+
+---
+
+# 36. IMPORTANT SECURITY RULE
+
+**NEVER EXECUTE THE UPLOADED PROJECT.**
+
+The application must only:
+
+```text
+Extract
+Read
+Parse
+Analyze
+Report
+```
+
+Uploaded code must never be executed on the host system.
+
+This MVP is a **static source-code security analyzer**.
+
+---
+
+# 37. TEST PROJECT
+
+Create automated tests for:
+
+* ZIP extraction security
+* path traversal protection
+* file filtering
+* SQL injection detection
+* command injection detection
+* hardcoded secret detection
+* XSS detection
+* eval detection
+* finding normalization
+* severity calculation
+* API responses
+
+---
+
+# 38. README
+
+Create a detailed README containing:
+
+```text
+Project Overview
+Research Objective
+Architecture
+Technology Stack
+Supported Languages
+Supported Vulnerabilities
+Installation
+Backend Setup
+Frontend Setup
+Running the Application
+Scanning a Project
+Demo Project
+API Documentation
+Security Considerations
+Future Research
+```
+
+Commands must be exact and tested.
+
+Example:
+
+```bash
+cd backend
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+pip install -r requirements.txt
+
+uvicorn main:app --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+# 39. FINAL DEMO FLOW
+
+The final review demonstration should take approximately 3 minutes.
+
+### Step 1
+
+Open:
+
+**AI Code Security Analyzer**
+
+### Step 2
+
+Click:
+
+**Try Demo Project**
+
+### Step 3
+
+Show the project structure.
+
+### Step 4
+
+Click:
+
+**Scan Project**
+
+### Step 5
+
+Show:
+
+```text
+Scanning 31 files...
+```
+
+### Step 6
+
+Display:
+
+```text
+12 Vulnerabilities Detected
+```
+
+### Step 7
+
+Show severity charts.
+
+### Step 8
+
+Open:
+
+```text
+backend/users.py
+```
+
+### Step 9
+
+Click:
+
+```text
+SQL Injection
+```
+
+### Step 10
+
+Show:
+
+```text
+CWE-89
+HIGH
+91% Confidence
+```
+
+### Step 11
+
+Show:
+
+```text
+Vulnerable Code
+       ↓
+Detection Evidence
+       ↓
+Why It Is Dangerous
+       ↓
+Recommended Fix
+```
+
+### Step 12
+
+Return to the project dashboard.
+
+Finish by showing:
+
+> **The system scans an entire AI-generated software project and identifies security vulnerabilities at the file and line level.**
+
+---
+
+# 40. FINAL DEVELOPMENT PRIORITY
+
+Build in this exact order:
+
+### Phase 1
+
+Backend:
+
+* FastAPI
+* ZIP upload
+* secure extraction
+* recursive file discovery
+* file filtering
+
+### Phase 2
+
+Detection:
+
+* Python rules
+* JavaScript rules
+* TypeScript rules
+* Java rules
+* normalized findings
+
+### Phase 3
+
+API:
+
+* project scanning
+* findings
+* statistics
+* report export
+
+### Phase 4
+
+Frontend:
+
+* dashboard
+* upload
+* scanning screen
+* project explorer
+* findings table
+* finding details
+* charts
+
+### Phase 5
+
+Polish:
+
+* demo project
+* animations
+* error handling
+* README
+* automated tests
+
+Do NOT move to the next phase until the previous phase works.
+
+---
+
+# FINAL REQUIREMENT
+
+The finished application must provide a real end-to-end working demonstration:
+
+```text
+UPLOAD PROJECT.ZIP
+        ↓
+SECURE EXTRACTION
+        ↓
+RECURSIVE FILE DISCOVERY
+        ↓
+SOURCE CODE ANALYSIS
+        ↓
+SECURITY RULES
+        ↓
+VULNERABILITY DETECTION
+        ↓
+CWE + SEVERITY
+        ↓
+FILE + LINE EVIDENCE
+        ↓
+PROJECT SECURITY REPORT
+        ↓
+EXPLANATION
+        ↓
+RECOMMENDED REMEDIATION
+```
+
+Build this as a **clean, impressive, functional MVP for a project review**.
+
+Do not over-engineer it.
+
+The most important requirement is:
+
+> **It must actually scan a real uploaded project and produce findings from the source files.**
+# Build a Demo MVP: AI Code Security Analyzer
+
+Build a **working demo MVP** for our cybersecurity research project:
+
+> **AI Code Security Analyzer — Detecting Security Vulnerabilities in AI-Generated Software**
+
+The goal of this MVP is to demonstrate that our system can take an **entire software project**, scan its source files, identify potential security vulnerabilities, explain the findings, and provide remediation suggestions.
+
+This is a **review/demo version**, so prioritize reliability, clean architecture, and an impressive working UI over advanced research features.
+
+---
+
+# 1. CORE DEMO
+
+The application must support this workflow:
+
+```text
+User uploads project ZIP
+        ↓
+ZIP extraction
+        ↓
+Project structure analysis
+        ↓
+Identify supported source files
+        ↓
+Scan files recursively
+        ↓
+Run security detection rules
+        ↓
+Normalize findings
+        ↓
+Deduplicate findings
+        ↓
+Generate project security report
+        ↓
+User explores vulnerabilities
+        ↓
+Show evidence + explanation + remediation
+```
+
+The system must scan the **whole project**, not just one pasted code snippet.
+
+---
+
+# 2. TECHNOLOGY
+
+## Backend
+
+Use:
+
+* Python 3.12+
+* FastAPI
+* Uvicorn
+
+## Frontend
+
+Use:
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* Recharts
+
+## Storage
+
+For this MVP:
+
+**Do not use PostgreSQL or Redis.**
+
+Use temporary/local storage for uploaded projects and analysis results.
+
+---
+
+# 3. PROJECT STRUCTURE
+
+Create:
+
+```text
+ai-code-security/
+│
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   │
+│   ├── analyzer/
+│   │   ├── __init__.py
+│   │   ├── engine.py
+│   │   ├── models.py
+│   │   ├── scanner.py
+│   │   ├── project_scanner.py
+│   │   ├── rules/
+│   │   │   ├── __init__.py
+│   │   │   ├── python_rules.py
+│   │   │   ├── javascript_rules.py
+│   │   │   └── java_rules.py
+│   │   └── utils.py
+│   │
+│   └── uploads/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── App.tsx
+│   └── package.json
+│
+└── README.md
+```
+
+Keep the detection engine modular so we can later add Semgrep, CodeQL, LLM analysis, taint analysis, etc.
+
+---
+
+# 4. LANDING / DASHBOARD
+
+Create a professional cybersecurity dashboard.
+
+Title:
+
+# AI Code Security Analyzer
+
+Subtitle:
+
+**Analyze AI-generated software for security vulnerabilities before production.**
+
+Main action:
+
+### Upload Project
+
+Allow the user to upload:
+
+```text
+project.zip
+```
+
+Also provide:
+
+### Paste Code
+
+as an optional secondary feature.
+
+---
+
+# 5. PROJECT ZIP UPLOAD
+
+The backend must accept ZIP files.
+
+Endpoint:
+
+```text
+POST /api/projects/scan
+```
+
+The ZIP should be:
+
+1. validated
+2. safely extracted
+3. recursively traversed
+4. source files identified
+5. ignored directories skipped
+6. files scanned
+7. findings returned
+
+---
+
+# 6. SECURITY FOR ZIP PROCESSING
+
+This is extremely important.
+
+Do NOT blindly extract ZIP files.
+
+Protect against:
+
+### Zip Slip / Path Traversal
+
+Reject entries such as:
+
+```text
+../../evil.py
+```
+
+or absolute paths.
+
+All extracted files must remain inside the temporary project directory.
+
+Also enforce:
+
+* Maximum ZIP size: 25 MB
+* Maximum extracted size: 100 MB
+* Maximum number of files: 2,000
+* Ignore symbolic links if possible
+* Reject dangerous archive structures
+
+The system should NEVER execute uploaded project files.
+
+We are performing **static source analysis only**.
+
+---
+
+# 7. FILE TYPES
+
+Initially support:
+
+### Python
+
+```text
+.py
+```
+
+### JavaScript
+
+```text
+.js
+.jsx
+```
+
+### TypeScript
+
+```text
+.ts
+.tsx
+```
+
+### Java
+
+```text
+.java
+```
+
+Later languages can be added.
+
+---
+
+# 8. IGNORED DIRECTORIES
+
+Do not scan:
+
+```text
+.git
+node_modules
+venv
+.venv
+__pycache__
+dist
+build
+target
+.idea
+.vscode
+coverage
+.cache
+```
+
+Make the ignored directory list configurable.
+
+---
+
+# 9. FILE SIZE LIMIT
+
+Do not scan extremely large individual files.
+
+Maximum:
+
+```text
+2 MB per source file
+```
+
+Files exceeding the limit should be skipped and reported under:
+
+**Skipped Files**
+
+---
+
+# 10. PROJECT ANALYSIS
+
+After upload, first analyze the project structure.
+
+Display:
+
+```text
+Project Name:
+FairShare
+
+Files Found:
+47
+
+Source Files:
+31
+
+Python:
+18
+
+JavaScript:
+7
+
+TypeScript:
+5
+
+Java:
+1
+
+Ignored:
+16
+```
+
+---
+
+# 11. SCANNING SCREEN
+
+After upload, show a professional scanning animation.
+
+Example:
+
+```text
+Scanning Project
+
+✓ Project extracted
+✓ Project structure analyzed
+✓ Python files discovered
+✓ JavaScript files discovered
+✓ Security rules loaded
+
+Scanning:
+
+backend/api/users.py
+██████████████████░░
+
+frontend/src/App.tsx
+████████████████████
+
+Checking security patterns...
+```
+
+Show the current file being scanned.
+
+Do not fake the actual results.
+
+The progress must be based on the real files being processed.
+
+---
+
+# 12. DETECTION ENGINE
+
+Create a modular detection framework.
+
+Use:
+
+```python
+class SecurityRule:
+    id = ""
+    name = ""
+    description = ""
+    cwe = ""
+    severity = ""
+
+    def detect(self, code, file_path):
+        return []
+```
+
+The scanner should load all applicable rules for the file type.
+
+Example:
+
+```text
+Python file
+    ↓
+Python security rules
+
+JavaScript file
+    ↓
+JavaScript security rules
+```
+
+---
+
+# 13. PYTHON VULNERABILITIES
+
+Implement reliable detection for:
+
+## SQL Injection
+
+Examples:
+
+```python
+query = "SELECT * FROM users WHERE id=" + user_id
+cursor.execute(query)
+```
+
+and:
+
+```python
+query = f"SELECT * FROM users WHERE id={user_id}"
+cursor.execute(query)
+```
+
+Finding:
+
+```text
+SQL Injection
+CWE-89
+HIGH
+```
+
+---
+
+## Command Injection
+
+Detect:
+
+```python
+os.system(user_input)
+```
+
+```python
+os.popen(user_input)
+```
+
+```python
+subprocess.run(user_input, shell=True)
+```
+
+```python
+subprocess.call(user_input, shell=True)
+```
+
+Finding:
+
+```text
+Command Injection
+CWE-78
+CRITICAL
+```
+
+---
+
+## Dangerous eval
+
+Detect:
+
+```python
+eval(user_input)
+```
+
+Finding:
+
+```text
+Code Injection
+CWE-95
+CRITICAL
+```
+
+---
+
+## Insecure Deserialization
+
+Detect:
+
+```python
+pickle.loads(data)
+```
+
+Finding:
+
+```text
+Insecure Deserialization
+CWE-502
+HIGH
+```
+
+---
+
+## Hardcoded Credentials
+
+Detect obvious patterns:
+
+```python
+password = "admin123"
+api_key = "..."
+secret_key = "..."
+```
+
+Finding:
+
+```text
+Hardcoded Credentials
+CWE-798
+HIGH
+```
+
+Do not flag every normal string.
+
+---
+
+## Path Traversal
+
+Detect suspicious patterns such as:
+
+```python
+open("/uploads/" + filename)
+```
+
+or:
+
+```python
+file_path = base_path + user_input
+open(file_path)
+```
+
+Finding:
+
+```text
+Path Traversal
+CWE-22
+HIGH
+```
+
+---
+
+# 14. JAVASCRIPT / TYPESCRIPT VULNERABILITIES
+
+Implement:
+
+## Cross-Site Scripting
+
+Detect:
+
+```javascript
+element.innerHTML = userInput;
+```
+
+Finding:
+
+```text
+Cross-Site Scripting
+CWE-79
+HIGH
+```
+
+---
+
+## Command Injection
+
+Detect dangerous patterns such as:
+
+```javascript
+exec(userInput)
+```
+
+Finding:
+
+```text
+Command Injection
+CWE-78
+CRITICAL
+```
+
+---
+
+## Hardcoded Secrets
+
+Detect obvious:
+
+```javascript
+const apiKey = "..."
+const password = "..."
+const secret = "..."
+```
+
+Finding:
+
+```text
+Hardcoded Credentials
+CWE-798
+HIGH
+```
+
+---
+
+# 15. JAVA VULNERABILITIES
+
+Implement basic rules for:
+
+* SQL injection
+* command injection
+* hardcoded credentials
+* unsafe deserialization
+
+Use simple but meaningful patterns.
+
+---
+
+# 16. FINDING MODEL
+
+Every finding must follow the same structure:
+
+```json
+{
+  "id": "VULN-001",
+  "title": "SQL Injection",
+  "severity": "HIGH",
+  "cwe": "CWE-89",
+  "confidence": 91,
+  "file": "backend/users.py",
+  "line": 42,
+  "code": "cursor.execute(query)",
+  "description": "User-controlled input appears to reach SQL execution without safe parameterization.",
+  "evidence": "The SQL query is constructed using user-controlled input.",
+  "recommendation": "Use parameterized SQL queries.",
+  "detector": "SQL Injection Rule"
+}
+```
+
+---
+
+# 17. LINE DETECTION
+
+Every finding must contain:
+
+```text
+File
+Line number
+Code snippet
+```
+
+Example:
+
+```text
+backend/api/users.py : Line 42
+```
+
+When possible, include 2–3 surrounding lines as context.
+
+---
+
+# 18. PROJECT SECURITY REPORT
+
+After scanning, show:
+
+# Security Report
+
+```text
+Project: FairShare
+
+Files Scanned       31
+Lines Analyzed      8,421
+Vulnerabilities     12
+```
+
+Severity:
+
+```text
+CRITICAL    2
+HIGH        5
+MEDIUM      4
+LOW         1
+```
+
+---
+
+# 19. DASHBOARD CHARTS
+
+Show:
+
+### Severity Distribution
+
+Use a chart:
+
+```text
+Critical
+High
+Medium
+Low
+```
+
+### Vulnerabilities by File
+
+Example:
+
+```text
+backend/auth.py       4
+backend/users.py      3
+frontend/App.tsx      2
+config/settings.py    2
+utils/helper.py       1
+```
+
+### CWE Distribution
+
+Example:
+
+```text
+CWE-89    3
+CWE-78    2
+CWE-798   2
+CWE-79    2
+CWE-502   1
+CWE-22    1
+CWE-95    1
+```
+
+---
+
+# 20. FINDINGS TABLE
+
+Create a searchable/filterable table:
+
+| Severity | Vulnerability     | CWE     | File        | Line | Confidence |
+| -------- | ----------------- | ------- | ----------- | ---- | ---------- |
+| CRITICAL | Command Injection | CWE-78  | utils.py    | 42   | 94%        |
+| HIGH     | SQL Injection     | CWE-89  | users.py    | 87   | 91%        |
+| HIGH     | Hardcoded Secret  | CWE-798 | settings.py | 19   | 97%        |
+
+Filters:
+
+```text
+Severity
+Language
+CWE
+File
+```
+
+---
+
+# 21. FINDING DETAILS
+
+Clicking a finding should open a detailed security analysis.
+
+Example:
+
+# SQL Injection
+
+```text
+Severity: HIGH
+CWE: CWE-89
+Confidence: 91%
+```
+
+### Location
+
+```text
+backend/api/users.py
+Line 42
+```
+
+### Vulnerable Code
+
+Show syntax-highlighted code:
+
+```python
+query = f"SELECT * FROM users WHERE id={user_id}"
+cursor.execute(query)
+```
+
+Highlight the vulnerable line.
+
+---
+
+# 22. WHY IS THIS VULNERABLE?
+
+Show a simple explanation:
+
+> User-controlled input is incorporated directly into a SQL query. An attacker may manipulate the input to alter the intended SQL statement.
+
+---
+
+# 23. DETECTION EVIDENCE
+
+Show:
+
+```text
+User Input
+    ↓
+user_id
+    ↓
+String Formatting
+    ↓
+SQL Query
+    ↓
+cursor.execute()
+```
+
+This visually communicates the beginning of our future taint-analysis system.
+
+For this MVP, the flow can be generated from the rule's detected pattern.
+
+---
+
+# 24. RECOMMENDED FIX
+
+Show before/after.
+
+### Vulnerable
+
+```python
+query = f"SELECT * FROM users WHERE id={user_id}"
+cursor.execute(query)
+```
+
+### Recommended
+
+```python
+cursor.execute(
+    "SELECT * FROM users WHERE id=%s",
+    (user_id,)
+)
+```
+
+Explain:
+
+> Parameterized queries keep user input separate from SQL instructions.
+
+---
+
+# 25. PROJECT FILE EXPLORER
+
+This is important for the demo.
+
+Create a left-side project explorer:
+
+```text
+FairShare/
+│
+├── backend/
+│   ├── api/
+│   │   ├── users.py      🔴 3
+│   │   └── auth.py       🟠 2
+│   │
+│   ├── utils.py          🔴 1
+│   └── settings.py       🟠 2
+│
+├── frontend/
+│   └── src/
+│       ├── App.tsx       🟠 2
+│       └── Login.tsx
+│
+└── requirements.txt
+```
+
+Color/severity indicators should show which files contain findings.
+
+Clicking a file should show:
+
+* source code
+* line numbers
+* findings for that file
+
+---
+
+# 26. DEMO PROJECT
+
+Create a built-in demo project.
+
+Button:
+
+**Try Demo Project**
+
+When clicked, load a simulated AI-generated project containing intentionally vulnerable code.
+
+Example structure:
+
+```text
+demo-project/
+├── backend/
+│   ├── app.py
+│   ├── users.py
+│   ├── auth.py
+│   └── utils.py
+├── frontend/
+│   ├── App.jsx
+│   └── Login.jsx
+└── config/
+    └── settings.py
+```
+
+Include several controlled vulnerabilities.
+
+The user can click:
+
+**Scan Demo Project**
+
+and immediately demonstrate the complete workflow.
+
+Clearly label this:
+
+> Demo project contains intentionally vulnerable code for security testing.
+
+---
+
+# 27. NO FALSE RESULTS
+
+The frontend must NOT contain hardcoded vulnerability results.
+
+The workflow must actually be:
+
+```text
+ZIP
+ ↓
+Backend
+ ↓
+Extract
+ ↓
+Read files
+ ↓
+Run rules
+ ↓
+Generate findings
+ ↓
+Return API response
+ ↓
+Frontend renders results
+```
+
+The demo data should only be used for the built-in demo project itself.
+
+---
+
+# 28. ANALYSIS STATISTICS
+
+After scanning, calculate:
+
+```text
+Files scanned
+Lines analyzed
+Rules executed
+Vulnerabilities
+Critical findings
+High findings
+Medium findings
+Low findings
+Scan duration
+```
+
+Example:
+
+```text
+31 files
+8,421 lines
+14 rules
+12 vulnerabilities
+0.82 seconds
+```
+
+Calculate values from the actual scan.
+
+---
+
+# 29. EXPORT
+
+Add:
+
+### Export Report
+
+Allow the user to download:
+
+```text
+security-report.json
+```
+
+The JSON should contain:
+
+* project information
+* scan statistics
+* findings
+* file information
+* severity
+* CWE
+* evidence
+* recommendations
+
+---
+
+# 30. UI DESIGN
+
+Make it look like a serious cybersecurity research product.
+
+Use:
+
+* dark theme
+* professional typography
+* code editor styling
+* clean cards
+* severity badges
+* charts
+* file explorer
+* vulnerability detail panel
+* subtle animations
+
+Avoid excessive neon effects.
+
+The interface should look appropriate for a **college project/research review**, not a gaming dashboard.
+
+---
+
+# 31. Main Navigation
+
+Sidebar:
+
+```text
+AI CODE SECURITY
+
+Dashboard
+
+Project Scanner
+
+Findings
+
+Research
+
+About
+```
+
+Dashboard should show the latest scan.
+
+---
+
+# 32. ABOUT / RESEARCH SECTION
+
+Add:
+
+# Research Objective
+
+> To systematically identify, quantify, and explain security vulnerabilities introduced by AI-generated software before it reaches production.
+
+Then show:
+
+```text
+AI-Generated Code
+        ↓
+Static Analysis
+        ↓
+Security Detection
+        ↓
+Vulnerability Classification
+        ↓
+Evidence & Explanation
+        ↓
+Risk Assessment
+        ↓
+Remediation
+```
+
+Add a small section:
+
+### Future Research
+
+```text
+✓ Multi-engine detection
+✓ AST analysis
+✓ Taint analysis
+✓ LLM-assisted analysis
+✓ Dynamic testing
+✓ Vulnerability correlation
+✓ Dataset generation
+✓ AI model comparison
+```
+
+Mark these as:
+
+**Planned Research Extensions**
+
+Do not pretend these are already implemented.
+
+---
+
+# 33. API
+
+Implement:
+
+```text
+GET  /api/health
+
+POST /api/projects/scan
+
+POST /api/code/analyze
+
+GET  /api/rules
+
+GET  /api/demo/project
+```
+
+For project scanning:
+
+```text
+POST /api/projects/scan
+Content-Type: multipart/form-data
+file=<project.zip>
+```
+
+Return:
+
+```json
+{
+  "project": {
+    "name": "FairShare",
+    "files_scanned": 31,
+    "lines_analyzed": 8421
+  },
+  "summary": {
+    "total": 12,
+    "critical": 2,
+    "high": 5,
+    "medium": 4,
+    "low": 1
+  },
+  "findings": []
+}
+```
+
+---
+
+# 34. ERROR HANDLING
+
+Handle:
+
+* invalid ZIP
+* corrupted ZIP
+* ZIP bomb protection
+* oversized ZIP
+* unsupported files
+* empty project
+* empty source files
+* malformed source
+* backend errors
+
+Show friendly messages in the frontend.
+
+---
+
+# 35. PERFORMANCE
+
+The MVP should comfortably handle a project containing:
+
+```text
+500–1000 source files
+```
+
+within reasonable limits.
+
+Do not load the entire project into the frontend.
+
+Only send:
+
+* project metadata
+* findings
+* relevant code snippets
+
+to the frontend.
+
+---
+
+# 36. IMPORTANT SECURITY RULE
+
+**NEVER EXECUTE THE UPLOADED PROJECT.**
+
+The application must only:
+
+```text
+Extract
+Read
+Parse
+Analyze
+Report
+```
+
+Uploaded code must never be executed on the host system.
+
+This MVP is a **static source-code security analyzer**.
+
+---
+
+# 37. TEST PROJECT
+
+Create automated tests for:
+
+* ZIP extraction security
+* path traversal protection
+* file filtering
+* SQL injection detection
+* command injection detection
+* hardcoded secret detection
+* XSS detection
+* eval detection
+* finding normalization
+* severity calculation
+* API responses
+
+---
+
+# 38. README
+
+Create a detailed README containing:
+
+```text
+Project Overview
+Research Objective
+Architecture
+Technology Stack
+Supported Languages
+Supported Vulnerabilities
+Installation
+Backend Setup
+Frontend Setup
+Running the Application
+Scanning a Project
+Demo Project
+API Documentation
+Security Considerations
+Future Research
+```
+
+Commands must be exact and tested.
+
+Example:
+
+```bash
+cd backend
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+pip install -r requirements.txt
+
+uvicorn main:app --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+# 39. FINAL DEMO FLOW
+
+The final review demonstration should take approximately 3 minutes.
+
+### Step 1
+
+Open:
+
+**AI Code Security Analyzer**
+
+### Step 2
+
+Click:
+
+**Try Demo Project**
+
+### Step 3
+
+Show the project structure.
+
+### Step 4
+
+Click:
+
+**Scan Project**
+
+### Step 5
+
+Show:
+
+```text
+Scanning 31 files...
+```
+
+### Step 6
+
+Display:
+
+```text
+12 Vulnerabilities Detected
+```
+
+### Step 7
+
+Show severity charts.
+
+### Step 8
+
+Open:
+
+```text
+backend/users.py
+```
+
+### Step 9
+
+Click:
+
+```text
+SQL Injection
+```
+
+### Step 10
+
+Show:
+
+```text
+CWE-89
+HIGH
+91% Confidence
+```
+
+### Step 11
+
+Show:
+
+```text
+Vulnerable Code
+       ↓
+Detection Evidence
+       ↓
+Why It Is Dangerous
+       ↓
+Recommended Fix
+```
+
+### Step 12
+
+Return to the project dashboard.
+
+Finish by showing:
+
+> **The system scans an entire AI-generated software project and identifies security vulnerabilities at the file and line level.**
+
+---
+
+# 40. FINAL DEVELOPMENT PRIORITY
+
+Build in this exact order:
+
+### Phase 1
+
+Backend:
+
+* FastAPI
+* ZIP upload
+* secure extraction
+* recursive file discovery
+* file filtering
+
+### Phase 2
+
+Detection:
+
+* Python rules
+* JavaScript rules
+* TypeScript rules
+* Java rules
+* normalized findings
+
+### Phase 3
+
+API:
+
+* project scanning
+* findings
+* statistics
+* report export
+
+### Phase 4
+
+Frontend:
+
+* dashboard
+* upload
+* scanning screen
+* project explorer
+* findings table
+* finding details
+* charts
+
+### Phase 5
+
+Polish:
+
+* demo project
+* animations
+* error handling
+* README
+* automated tests
+
+Do NOT move to the next phase until the previous phase works.
+
+---
+
+# FINAL REQUIREMENT
+
+The finished application must provide a real end-to-end working demonstration:
+
+```text
+UPLOAD PROJECT.ZIP
+        ↓
+SECURE EXTRACTION
+        ↓
+RECURSIVE FILE DISCOVERY
+        ↓
+SOURCE CODE ANALYSIS
+        ↓
+SECURITY RULES
+        ↓
+VULNERABILITY DETECTION
+        ↓
+CWE + SEVERITY
+        ↓
+FILE + LINE EVIDENCE
+        ↓
+PROJECT SECURITY REPORT
+        ↓
+EXPLANATION
+        ↓
+RECOMMENDED REMEDIATION
+```
+
+Build this as a **clean, impressive, functional MVP for a project review**.
+
+Do not over-engineer it.
+
+The most important requirement is:
+
+> **It must actually scan a real uploaded project and produce findings from the source files.**
